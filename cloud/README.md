@@ -1,8 +1,8 @@
 # Reproduce the Cloud Foundry deployment
 
-This guide deploys the Requests CAP API and AppRouter to your own BTP CF space,
-with two isolated logical databases on an existing PostgreSQL instance. It does
-not deploy the Assets cloud API and does not create a PostgreSQL service implicitly.
+This guide deploys two CAP APIs and their AppRouters to your own BTP CF space,
+using two isolated logical databases on one existing PostgreSQL instance. It does
+not create a PostgreSQL managed service implicitly.
 
 ## 1. Check account capabilities and sign in
 
@@ -53,7 +53,8 @@ python3 scripts/render-cloud.py
 
 This only generates `.local/generated/requests.yml`, `deployer.yml`,
 `approuter.yml`, `xs-security.json` and `inspect-db.yml`. It makes no cloud calls.
-Application paths are made absolute relative to the checked-out repository.
+Assets manifests are also rendered: `assets.yml`, `assets-deployer.yml` and
+`assets-approuter.yml`. Application paths are made absolute relative to the checked-out repository.
 Do not deploy the unresolved templates directly.
 
 Routes are derived as:
@@ -224,6 +225,61 @@ The interface is plain HTML/CSS/JavaScript. Controls adapt to token scopes retur
 by AppRouter's User API, but CAP remains the authorization boundary. No password
 user table is involved. XSUAA login and SQL technical accounts solve different needs.
 
+## 9. Complete the second application: Assets
+
+The first bootstrap already prepared `cap_lab_assets_db`, its private schema and
+deployer/runtime connection services. Do not run it again to deploy this API.
+
+```sh
+npm run build:assets
+node scripts/prepare-cloud.mjs assets
+npm --prefix apps/assets/gen/pg install --package-lock-only --ignore-scripts --no-audit --no-fund
+npm --prefix apps/assets/gen/srv install --package-lock-only --ignore-scripts --no-audit --no-fund
+npm --prefix apps/assets-approuter ci
+python3 scripts/cloud-assets.py
+```
+
+The helper updates the shared XSUAA descriptor with Assets scopes, role collections
+and callback URLs while retaining Requests definitions. It stages the Assets
+model deployer using only `cap-lab-assets-deploy-db`, creates tables through CAP,
+and publishes `cap-lab-assets` with only its runtime connection service and XSUAA.
+The API never receives the Requests SQL binding.
+
+It then checks Assets CAP authorization with mock identities and the real database.
+A temporary route-free task receives the two **runtime** connection services to
+validate the shared host/port, distinct database/schema/users, own-domain CRUD,
+blocked persistent DDL and SQLSTATE 42501 for cross-database connections in both
+directions. Changes made by SQL tests roll back. No administrative binding is used.
+
+`cap-lab-assets-ui` provides an independent browser entry point with name and serial
+number fields, editing and deletion. Role collections are **CAP Lab Assets Viewer**
+and **CAP Lab Assets Editor**. Assign them separately in the cockpit with the correct
+identity provider, then start a fresh session. Requests role assignments are retained
+and do not automatically authorize Assets.
+
+```text
+Assets API: https://cap-lab-assets-<route_suffix>.<domain>/odata/v4/assets/Assets
+Assets UI:  https://cap-lab-assets-ui-<route_suffix>.<domain>/
+```
+
+Checkpoint `assets_stage` is kept in the same ignored, target-bound state file.
+After a failure, inspect the stage/resources and rerun the helper to resume.
+After rebuilding code, `python3 scripts/cloud-assets.py --redeploy` intentionally
+reapplies the Assets model/API/UI and reruns its validations. It does not provision
+new databases or replace passwords. If a task fails, keep the checkpoint and remove
+only any specifically reported temporary resources after review.
+
+To recheck Assets browser routing without publishing:
+
+```sh
+python3 scripts/cloud-approuter.py --assets --check-only
+```
+
+The original AppRouter helper defaults to Requests. Its `--assets` option selects
+the Assets manifest, route and OData path. Both use the same XSUAA instance but
+separate AppRouter sessions and business-role scopes. Human login and CRUD in each
+browser session remain a separate manual recording/reproduction check.
+
 ## Troubleshooting
 
 | Symptom | Check |
@@ -247,13 +303,15 @@ Remove only the application and its route when that is the intended cleanup:
 ```sh
 cf delete cap-lab-requests-ui -r -f
 cf delete cap-lab-requests -r -f
+cf delete cap-lab-assets-ui -r -f
+cf delete cap-lab-assets -r -f
 ```
 
 This preserves XSUAA, the four technical connection services, PostgreSQL and data.
 Review dependencies before removing any of those persistent resources. In
 particular, never delete the shared instance as part of an individual application's
 cleanup. UPS connections can use it even when no app is directly bound to it.
-The API and AppRouter require 512 MB combined, plus staging/tasks. Check plan costs,
+The two APIs and two AppRouters require 1 GB combined, plus staging/tasks. Check plan costs,
 quotas and expiration in your own account; no universal zero-cost claim is made.
 
 Passwords in user-provided services are not broker-rotated automatically. Update

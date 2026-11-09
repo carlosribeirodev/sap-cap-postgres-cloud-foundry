@@ -25,9 +25,12 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def main():
     context = load()
     source = context.cf_source()
-    base = context.ui_url
+    assets = '--assets' in sys.argv
+    app_name = 'cap-lab-assets-ui' if assets else 'cap-lab-requests-ui'
+    base = context.assets_ui_url if assets else context.ui_url
+    entity_path = '/odata/v4/assets/Assets' if assets else '/odata/v4/requests/Requests'
     security = context.render('cloud/xs-security.json')
-    manifest = context.render('cloud/approuter.yml')
+    manifest = context.render('cloud/assets-approuter.yml' if assets else 'cloud/approuter.yml')
     with tempfile.TemporaryDirectory(prefix='cap-approuter-') as tmp:
         cfg = Path(tmp) / '.cf'
         cfg.mkdir(mode=0o700)
@@ -39,7 +42,7 @@ def main():
             if r.returncode:
                 raise RuntimeError('Falha em cf ' + args[0] + '; saída omitida para preservar credenciais.')
             return r
-        if '--check-only' not in sys.argv:
+        if '--check-only' not in sys.argv and '--skip-xsuaa-update' not in sys.argv:
             print('Atualizando os callbacks autorizados no XSUAA existente.', flush=True)
             cf('update-service', 'cap-lab-requests-auth', '-c', str(security))
             for _ in range(24):
@@ -51,8 +54,9 @@ def main():
                 time.sleep(5)
             else:
                 raise RuntimeError('Atualização do XSUAA ainda em andamento.')
-            print('Publicando AppRouter com página de solicitações.', flush=True)
-            cf('push', 'cap-lab-requests-ui', '-f', str(manifest), timeout=420)
+        if '--check-only' not in sys.argv:
+            print('Publicando AppRouter: ' + app_name, flush=True)
+            cf('push', app_name, '-f', str(manifest), timeout=420)
         opener = urllib.request.build_opener(NoRedirect())
         def get(url, ajax=False):
             headers = {'User-Agent': 'Mozilla/5.0 (CAP Lab validation)'}
@@ -89,7 +93,7 @@ def main():
             break
         else:
             raise RuntimeError('Número excessivo de redirecionamentos de login.')
-        for path, ajax, expected in [('/odata/v4/requests/Requests', True, 401), ('/user-api/currentUser', True, 401), ('/logout.html', False, 200), ('/styles.css', False, 200)]:
+        for path, ajax, expected in [(entity_path, True, 401), ('/user-api/currentUser', True, 401), ('/logout.html', False, 200), ('/styles.css', False, 200)]:
             with get(base + path, ajax) as response:
                 if response.status != expected:
                     raise RuntimeError('HTTP inesperado em ' + path + ': ' + str(response.status))

@@ -1,0 +1,18 @@
+applications:
+  - name: cap-lab-assets
+    path: ../apps/assets/gen/srv
+    memory: 256M
+    disk_quota: 512M
+    buildpacks: [nodejs_buildpack]
+    routes:
+      - route: cap-lab-assets-((route_suffix)).((domain))
+    health-check-type: http
+    health-check-http-endpoint: /health
+    services:
+      - cap-lab-assets-runtime-db
+      - cap-lab-requests-auth
+    env:
+      NODE_ENV: production
+      cds_requires_db_vcap_name: cap-lab-assets-runtime-db
+      cds_requires_db_vcap_label: user-provided
+      cds_requires_db_pool_max: 5

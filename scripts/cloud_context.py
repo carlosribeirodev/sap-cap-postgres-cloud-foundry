@@ -45,6 +45,8 @@ class Context:
         self.postgres_service = self.config['postgres_service']
         self.api_url = 'https://cap-lab-requests-' + self.config['route_suffix'] + '.' + self.config['domain']
         self.ui_url = 'https://cap-lab-requests-ui-' + self.config['route_suffix'] + '.' + self.config['domain']
+        self.assets_api_url = 'https://cap-lab-assets-' + self.config['route_suffix'] + '.' + self.config['domain']
+        self.assets_ui_url = 'https://cap-lab-assets-ui-' + self.config['route_suffix'] + '.' + self.config['domain']
         self.state = Path(self.config.get('state_file', ROOT / '.local' / 'cloud-state.json')).expanduser()
         if not self.state.is_absolute():
             self.state = ROOT / self.state

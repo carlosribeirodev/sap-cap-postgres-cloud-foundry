@@ -1,0 +1,12 @@
+applications:
+  - name: cap-lab-assets-ui
+    path: ../apps/assets-approuter
+    memory: 256M
+    disk_quota: 512M
+    buildpacks: [nodejs_buildpack]
+    routes:
+      - route: cap-lab-assets-ui-((route_suffix)).((domain))
+    services: [cap-lab-requests-auth]
+    env:
+      NODE_ENV: production
+      destinations: '[{"name":"assets-api","url":"https://cap-lab-assets-((route_suffix)).((domain))","forwardAuthToken":true}]'

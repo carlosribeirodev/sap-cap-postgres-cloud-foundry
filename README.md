@@ -4,10 +4,10 @@ A hands-on SAP BTP lab: build an OData API with SAP Cloud Application Programmin
 Model (CAP), use one PostgreSQL instance for multiple applications with isolated
 data, and sign in through SAP Application Router and XSUAA.
 
-The Requests application includes a small HTML/CSS/JavaScript interface. A second
-CAP application, Assets, demonstrates a separate data domain locally; its cloud
-API has not been deployed in this exercise. UI labels and video materials are in
-Brazilian Portuguese. The setup and operational documentation are in English.
+Requests and Assets are separate CAP applications, each with its own database,
+schema, runtime/deployer logins and HTML/CSS/JavaScript interface. They share the
+PostgreSQL instance and XSUAA service, with separate business scopes. UI labels
+and video materials are in Brazilian Portuguese. The setup and operational documentation are in English.
 
 ## Architecture
 
@@ -19,6 +19,10 @@ flowchart LR
   XSUAA --- API
   API -->|runtime login| Requests[(Requests database / private schema)]
   Deployer[CAP deployer task] -->|deployment login| Requests
+  AssetsRouter[Assets AppRouter] -->|forwarded access token| AssetsAPI[Assets CAP / OData]
+  AssetsAPI -->|Assets runtime login| Assets
+  XSUAA --- AssetsRouter
+  XSUAA --- AssetsAPI
   subgraph PostgreSQL[One PostgreSQL instance]
     Requests
     Assets[(Assets database / private schema)]
@@ -41,7 +45,8 @@ The server's CPU, memory, connections, storage and availability remain shared.
 | Path | Purpose |
 | --- | --- |
 | `apps/requests` | CAP model, OData service and authorization smoke test. |
-| `apps/assets` | Second CAP data domain, currently a local example. |
+| `apps/assets` | Independent Assets CAP API and authorization smoke test. |
+| `apps/assets-approuter` | Assets browser login and create/edit/delete interface. |
 | `apps/approuter` | Browser login, routing and a small CRUD interface. |
 | `postgres/init.sql`, `compose.yaml` | Local PostgreSQL bootstrap. |
 | `cloud/*.yml`, `cloud/xs-security.json` | Account-independent templates. |
@@ -91,7 +96,7 @@ npm run start:requests
 npm run start:assets
 ```
 
-Requests uses CAP development identities: `viewer` can read and `editor` can
+Both local APIs use CAP development identities: `viewer` can read and `editor` can
 read/write. These are mocks, not XSUAA accounts or PostgreSQL logins. They have no
 configured password and are available only in the development profile.
 
@@ -102,12 +107,12 @@ curl --fail-with-body -u editor: \
   http://127.0.0.1:4004/odata/v4/requests/Requests
 curl --fail-with-body -u viewer: \
   http://127.0.0.1:4004/odata/v4/requests/Requests
-curl --fail-with-body \
+curl --fail-with-body -u viewer: \
   http://127.0.0.1:4005/odata/v4/assets/Assets
 ```
 
 The local CAP servers listen on the machine's interfaces. Use a trusted development
-machine; these local runners and the Assets example are not production endpoints.
+machine; these local development runners are not production endpoints.
 This quick start runs the APIs; browser SSO is covered in the cloud guide.
 
 ### What the local example simplifies
@@ -141,6 +146,22 @@ Rendering only writes ignored local files. **The three cloud-operation scripts
 create/update real resources** in the configured space. They verify the CLI target
 before mutation. No cloud command runs as part of `npm ci`, build or tests.
 
+To publish the second app after the first API/database setup is complete:
+
+```sh
+npm run build:assets
+node scripts/prepare-cloud.mjs assets
+npm --prefix apps/assets/gen/pg install --package-lock-only --ignore-scripts --no-audit --no-fund
+npm --prefix apps/assets/gen/srv install --package-lock-only --ignore-scripts --no-audit --no-fund
+npm --prefix apps/assets-approuter ci
+python3 scripts/cloud-assets.py
+```
+
+This uses the existing Assets database and technical bindings; it does not create
+another managed instance or rerun database provisioning. It publishes a separate
+API/AppRouter and tests CRUD, restricted DDL and cross-database denial in **both**
+directions. See the cloud guide for checkpoint recovery and route names.
+
 Real account settings are ignored in `cloud/lab.json`. Rendered manifests and secret
 checkpoint state live under ignored `.local/`. Never commit either. The example
 requires no access to the author's account, URLs or external workspace directories.
@@ -153,9 +174,16 @@ requires no access to the author's account, URLs or external workspace directori
 | CAP `@requires` / `@restrict` | Authorize API operations. |
 | PostgreSQL technical users | Isolate databases and separate model deployment from runtime. |
 
-Assign **CAP Lab Requests Editor** or **CAP Lab Requests Viewer** to your own user
-in the subaccount, using the correct identity provider, then start a fresh browser
-session. Deployment does not assign the role collection to a person.
+Assign the matching collection to your own user in the subaccount, using the
+correct identity provider, then start a fresh browser session:
+
+| App | Read-only collection | Read/write collection |
+| --- | --- | --- |
+| Requests | CAP Lab Requests Viewer | CAP Lab Requests Editor |
+| Assets | CAP Lab Assets Viewer | CAP Lab Assets Editor |
+
+Deployment does not assign role collections to a person. Having a Requests role
+does not grant an Assets role, even though both apps use the same XSUAA service.
 
 No table of user passwords is required. Additional user business data would be a
 separate modeling decision. Hiding a button in the UI is not an authorization check.
@@ -190,6 +218,8 @@ See [the validation record](VALIDATION.md) for the exact evidence and limitation
   names alone do not establish an access-control boundary.
 - The API binds to narrowly scoped user-provided services, not directly to the
   administrator-capable managed PostgreSQL binding.
+- Isolation applies to application SQL credentials. Database and platform
+  administrators remain privileged; this is not isolation from those operators.
 - Those services do not rotate custom SQL passwords automatically. PostgreSQL
   credentials and the corresponding CF service must be updated together.
 - The managed instance may show no directly bound apps even while custom bindings

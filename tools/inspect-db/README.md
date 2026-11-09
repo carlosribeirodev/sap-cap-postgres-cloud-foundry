@@ -14,6 +14,10 @@ rendered `.local/generated/inspect-db.yml` and a temporary application name. See
   never creates business tables. Do not execute it as an ad hoc read-only check.
 - `smoke.cjs` uses only the Requests runtime binding to check SQL CRUD, lack of
   persistent DDL privileges and denied cross-database access. Test writes roll back.
+- `isolation-pair.cjs` receives both runtime bindings in a temporary test task,
+  confirms a common host/port with distinct users/databases/schemas, and checks
+  own-domain CRUD, blocked persistent DDL and cross-database denial in both directions.
+  It never receives the managed administrator binding; SQL changes roll back.
 
 The manifest selects the configured managed service through `LAB_POSTGRES_SERVICE`.
 TLS validation remains enabled. The API never receives that administrator-capable

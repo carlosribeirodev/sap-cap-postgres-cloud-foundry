@@ -4,19 +4,87 @@
   "oauth2-configuration": {
     "redirect-uris": [
       "https://cap-lab-requests-ui-((route_suffix)).((domain))/login/callback",
-      "https://cap-lab-requests-ui-((route_suffix)).((domain))/logout.html"
+      "https://cap-lab-requests-ui-((route_suffix)).((domain))/logout.html",
+      "https://cap-lab-assets-ui-((route_suffix)).((domain))/login/callback",
+      "https://cap-lab-assets-ui-((route_suffix)).((domain))/logout.html"
     ]
   },
   "scopes": [
-    { "name": "$XSAPPNAME.RequestsViewer", "description": "Consultar solicitações" },
-    { "name": "$XSAPPNAME.RequestsEditor", "description": "Consultar e editar solicitações" }
+    {
+      "name": "$XSAPPNAME.RequestsViewer",
+      "description": "Consultar solicitações"
+    },
+    {
+      "name": "$XSAPPNAME.RequestsEditor",
+      "description": "Consultar e editar solicitações"
+    },
+    {
+      "name": "$XSAPPNAME.AssetsViewer",
+      "description": "Consultar ativos"
+    },
+    {
+      "name": "$XSAPPNAME.AssetsEditor",
+      "description": "Consultar e editar ativos"
+    }
   ],
   "role-templates": [
-    { "name": "RequestsViewer", "description": "Consulta", "scope-references": ["$XSAPPNAME.RequestsViewer"] },
-    { "name": "RequestsEditor", "description": "Edição", "scope-references": ["$XSAPPNAME.RequestsEditor"] }
+    {
+      "name": "RequestsViewer",
+      "description": "Consulta",
+      "scope-references": [
+        "$XSAPPNAME.RequestsViewer"
+      ]
+    },
+    {
+      "name": "RequestsEditor",
+      "description": "Edição",
+      "scope-references": [
+        "$XSAPPNAME.RequestsEditor"
+      ]
+    },
+    {
+      "name": "AssetsViewer",
+      "description": "Consultar ativos",
+      "scope-references": [
+        "$XSAPPNAME.AssetsViewer"
+      ]
+    },
+    {
+      "name": "AssetsEditor",
+      "description": "Consultar e editar ativos",
+      "scope-references": [
+        "$XSAPPNAME.AssetsEditor"
+      ]
+    }
   ],
   "role-collections": [
-    { "name": "CAP Lab Requests Viewer", "description": "Consultar solicitações do laboratório", "role-template-references": ["$XSAPPNAME.RequestsViewer"] },
-    { "name": "CAP Lab Requests Editor", "description": "Editar solicitações do laboratório", "role-template-references": ["$XSAPPNAME.RequestsEditor"] }
+    {
+      "name": "CAP Lab Requests Viewer",
+      "description": "Consultar solicitações do laboratório",
+      "role-template-references": [
+        "$XSAPPNAME.RequestsViewer"
+      ]
+    },
+    {
+      "name": "CAP Lab Requests Editor",
+      "description": "Editar solicitações do laboratório",
+      "role-template-references": [
+        "$XSAPPNAME.RequestsEditor"
+      ]
+    },
+    {
+      "name": "CAP Lab Assets Viewer",
+      "description": "Consultar ativos",
+      "role-template-references": [
+        "$XSAPPNAME.AssetsViewer"
+      ]
+    },
+    {
+      "name": "CAP Lab Assets Editor",
+      "description": "Consultar e editar ativos",
+      "role-template-references": [
+        "$XSAPPNAME.AssetsEditor"
+      ]
+    }
   ]
 }

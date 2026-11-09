@@ -31,6 +31,8 @@ class ContextTests(unittest.TestCase):
     def test_urls_and_default_private_state(self):
         cfg = context.Context(self.path)
         self.assertEqual(cfg.api_url, 'https://cap-lab-requests-sample.apps.example.invalid')
+        self.assertEqual(cfg.assets_api_url, 'https://cap-lab-assets-sample.apps.example.invalid')
+        self.assertEqual(cfg.assets_ui_url, 'https://cap-lab-assets-ui-sample.apps.example.invalid')
         self.assertEqual(cfg.state, self.root / '.local' / 'cloud-state.json')
 
     def test_state_path_cannot_escape_ignored_folder_into_source(self):
