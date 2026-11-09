@@ -248,9 +248,10 @@ own account. A stopped application does not establish zero infrastructure cost.
 
 ## Learning materials and references
 
-The [video pack](docs/video/btp-cf-006/README.md) now centers on two editable slides:
+The [video pack](docs/video/btp-cf-006/README.md) now centers on three editable slides:
 one PostgreSQL instance with two isolated applications, followed by how service
-bindings provide the database, user and schema to CAP. It includes a focused
+bindings provide the database, user and schema to CAP, and a source-file map for
+each application's configuration. It includes a focused
 walkthrough in Portuguese; the previous eight-slide deck and longer recording
 outline remain available as supplementary materials.
 
