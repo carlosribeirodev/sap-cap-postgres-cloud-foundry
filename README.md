@@ -248,11 +248,11 @@ own account. A stopped application does not establish zero infrastructure cost.
 
 ## Learning materials and references
 
-The [video pack](docs/video/btp-cf-006/README.md) now centers on three editable slides:
-one PostgreSQL instance with two isolated applications, followed by how service
-bindings provide the database, user and schema to CAP, and a source-file map for
-each application's configuration. It includes a focused
-walkthrough in Portuguese; the previous eight-slide deck and longer recording
+The [video pack](docs/video/btp-cf-006/README.md) now centers on four editable slides:
+one PostgreSQL instance with two isolated applications; bootstrap creation of SQL
+users, a private checkpoint and user-provided services; delivery of credentials
+through bindings and VCAP_SERVICES to CAP; and a source-file map for each app.
+It includes a focused walkthrough in Portuguese; the previous eight-slide deck and longer recording
 outline remain available as supplementary materials.
 
 - [CAP with PostgreSQL](https://cap.cloud.sap/docs/guides/databases/postgres)
