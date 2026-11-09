@@ -1,0 +1,11 @@
+applications:
+  - name: ((app_name))
+    memory: 128M
+    disk_quota: 512M
+    no-route: true
+    buildpacks:
+      - nodejs_buildpack
+    services:
+      - ((postgres_service))
+    env:
+      LAB_POSTGRES_SERVICE: ((postgres_service))

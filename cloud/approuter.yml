@@ -1,0 +1,14 @@
+applications:
+  - name: cap-lab-requests-ui
+    path: ../apps/approuter
+    memory: 256M
+    disk_quota: 512M
+    buildpacks:
+      - nodejs_buildpack
+    routes:
+      - route: cap-lab-requests-ui-((route_suffix)).((domain))
+    services:
+      - cap-lab-requests-auth
+    env:
+      NODE_ENV: production
+      destinations: '[{"name":"requests-api","url":"https://cap-lab-requests-((route_suffix)).((domain))","forwardAuthToken":true}]'

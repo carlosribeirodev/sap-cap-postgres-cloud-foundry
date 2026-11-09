@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>Solicitações · BTP Lab</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/">BTP <span>LAB</span></a><div class="account"><span id="user-name">Carregando usuário…</span><a href="/logout">Sair</a></div></header>
+  <main>
+    <div class="heading"><div><p class="eyebrow">CENTRAL DE SOLICITAÇÕES</p><h1>Suas solicitações</h1><p class="intro">Acompanhe o que está aberto e mantenha tudo em dia.</p></div><span id="access-level" class="access">Verificando acesso</span></div>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <a id="login-again" href="/" hidden>Entrar novamente</a>
+    <section id="create-panel" class="panel" aria-labelledby="create-title" hidden>
+      <h2 id="create-title">Nova solicitação</h2>
+      <form id="create-form">
+        <label for="title">Título <span class="required">obrigatório</span></label><input id="title" name="title" maxlength="120" required placeholder="O que você precisa?">
+        <label for="description">Descrição <span class="optional">opcional</span></label><textarea id="description" name="description" maxlength="1000" rows="3" placeholder="Adicione os detalhes que ajudam a entender a solicitação."></textarea>
+        <div class="form-footer"><button id="create-button" type="submit">Criar solicitação</button></div>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="list-title">
+      <div class="list-heading"><div><h2 id="list-title">Solicitações</h2><p id="count" class="muted">Carregando…</p></div><button id="refresh" type="button" class="secondary">Atualizar</button></div>
+      <p id="empty" class="empty" hidden>Nenhuma solicitação por aqui ainda.</p>
+      <div id="request-list" class="request-list" aria-busy="true"></div>
+    </section>
+    <footer>Central de Solicitações · SAP BTP Lab</footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "lab-requests",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "start": "cds-serve" },
+  "engines": { "node": "24.x" },
+  "dependencies": { "@sap/cds": "10.2.2", "@cap-js/postgres": "3.1.2", "@sap/xssec": "4.16.0" },
+  "cds": {
+    "requires": {
+      "db": { "kind": "postgres" },
+      "auth": {
+        "[production]": { "kind": "xsuaa" },
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "viewer": { "roles": ["RequestsViewer"] },
+            "editor": { "roles": ["RequestsEditor"] },
+            "*": false
+          }
+        }
+      }
+    }
+  }
+}

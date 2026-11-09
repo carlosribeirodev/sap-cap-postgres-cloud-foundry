@@ -1,0 +1,8 @@
+{
+  "name": "cap-lab-requests-ui",
+  "version": "0.1.0",
+  "private": true,
+  "engines": { "node": "24.x" },
+  "scripts": { "start": "node --max-old-space-size=192 node_modules/@sap/approuter/approuter.js" },
+  "dependencies": { "@sap/approuter": "23.4.0" }
+}

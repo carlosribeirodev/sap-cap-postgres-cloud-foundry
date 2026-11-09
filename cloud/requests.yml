@@ -1,0 +1,19 @@
+applications:
+  - name: cap-lab-requests
+    path: ../apps/requests/gen/srv
+    memory: 256M
+    disk_quota: 512M
+    buildpacks:
+      - nodejs_buildpack
+    routes:
+      - route: cap-lab-requests-((route_suffix)).((domain))
+    health-check-type: http
+    health-check-http-endpoint: /health
+    services:
+      - cap-lab-requests-runtime-db
+      - cap-lab-requests-auth
+    env:
+      NODE_ENV: production
+      cds_requires_db_vcap_name: cap-lab-requests-runtime-db
+      cds_requires_db_vcap_label: user-provided
+      cds_requires_db_pool_max: 5

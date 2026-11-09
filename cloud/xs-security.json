@@ -1,0 +1,22 @@
+{
+  "xsappname": "cap-lab-requests-((route_suffix))",
+  "tenant-mode": "dedicated",
+  "oauth2-configuration": {
+    "redirect-uris": [
+      "https://cap-lab-requests-ui-((route_suffix)).((domain))/login/callback",
+      "https://cap-lab-requests-ui-((route_suffix)).((domain))/logout.html"
+    ]
+  },
+  "scopes": [
+    { "name": "$XSAPPNAME.RequestsViewer", "description": "Consultar solicitações" },
+    { "name": "$XSAPPNAME.RequestsEditor", "description": "Consultar e editar solicitações" }
+  ],
+  "role-templates": [
+    { "name": "RequestsViewer", "description": "Consulta", "scope-references": ["$XSAPPNAME.RequestsViewer"] },
+    { "name": "RequestsEditor", "description": "Edição", "scope-references": ["$XSAPPNAME.RequestsEditor"] }
+  ],
+  "role-collections": [
+    { "name": "CAP Lab Requests Viewer", "description": "Consultar solicitações do laboratório", "role-template-references": ["$XSAPPNAME.RequestsViewer"] },
+    { "name": "CAP Lab Requests Editor", "description": "Editar solicitações do laboratório", "role-template-references": ["$XSAPPNAME.RequestsEditor"] }
+  ]
+}

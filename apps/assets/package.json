@@ -1,0 +1,8 @@
+{
+  "name": "lab-assets",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "start": "cds-serve" },
+  "dependencies": { "@sap/cds": "10.2.2", "@cap-js/postgres": "3.1.2" },
+  "cds": { "requires": { "db": { "kind": "postgres" } } }
+}

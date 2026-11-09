@@ -1,0 +1,7 @@
+{
+  "org": "YOUR_CF_ORG",
+  "space": "dev",
+  "domain": "cfapps.YOUR_REGION.hana.ondemand.com",
+  "route_suffix": "choose-a-unique-suffix",
+  "postgres_service": "shared-postgres"
+}

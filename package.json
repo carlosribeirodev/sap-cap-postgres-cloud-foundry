@@ -1,0 +1,30 @@
+{
+  "name": "cap-postgres-lab",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "deploy:requests": "node scripts/run.mjs requests deploy",
+    "deploy:assets": "node scripts/run.mjs assets deploy",
+    "start:requests": "node scripts/run.mjs requests serve",
+    "start:assets": "node scripts/run.mjs assets serve",
+    "check:isolation": "node scripts/check-isolation.mjs",
+    "build:requests": "cd apps/requests && cds build --production",
+    "build:assets": "cd apps/assets && cds build --production",
+    "test:ui": "playwright test",
+    "test:cloud-config": "python3 -m unittest discover -s test/cloud -p 'test_*.py'"
+  },
+  "dependencies": {
+    "@cap-js/postgres": "3.1.2",
+    "@sap/cds": "10.2.2",
+    "@sap/xssec": "4.16.0",
+    "pg": "8.16.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@sap/cds-dk": "10.2.1"
+  }
+}
