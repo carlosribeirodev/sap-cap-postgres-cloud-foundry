@@ -218,8 +218,10 @@ own account. A stopped application does not establish zero infrastructure cost.
 
 ## Learning materials and references
 
-The [video pack](docs/video/btp-cf-006/README.md) contains eight editable slides,
-speaker notes and a 22–25 minute recording outline in Portuguese.
+The [video pack](docs/video/btp-cf-006/README.md) now centers on a single editable
+architecture slide: one PostgreSQL instance, two applications and isolated data.
+It includes a focused walkthrough in Portuguese; the previous eight-slide deck
+and longer recording outline remain available as supplementary materials.
 
 - [CAP with PostgreSQL](https://cap.cloud.sap/docs/guides/databases/postgres)
 - [CAP authentication](https://cap.cloud.sap/docs/node.js/authentication)
