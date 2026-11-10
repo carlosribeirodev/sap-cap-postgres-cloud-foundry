@@ -29,3 +29,13 @@ secrets/
 # Shared helpers copied when preparing CF artifacts.
 tools/inspect-db/credential-store.cjs
 tools/inspect-db/cloud-start.cjs
+
+# Recording/presentation assets belong in the private repository.
+/docs/video/
+*.ppt
+*.pptx
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm

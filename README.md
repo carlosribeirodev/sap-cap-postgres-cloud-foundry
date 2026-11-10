@@ -7,7 +7,7 @@ data, and sign in through SAP Application Router and XSUAA.
 Requests and Assets are separate CAP applications, each with its own database,
 schema, runtime/deployer logins and HTML/CSS/JavaScript interface. They share the
 PostgreSQL instance and XSUAA service, with separate business scopes. UI labels
-and video materials are in Brazilian Portuguese. The setup and operational documentation are in English.
+are in Brazilian Portuguese. The setup and operational documentation are in English.
 
 ## Architecture
 
@@ -60,7 +60,6 @@ The server's CPU, memory, connections, storage and availability remain shared.
 | `lib` | Credential Store client and CAP startup integration. |
 | `tools/inspect-db` | Temporary, route-free cloud database tasks. |
 | `test` | Frontend and cloud-configuration tests using synthetic data. |
-| `docs/video/btp-cf-006` | Editable PowerPoint, narration and demonstration scripts. |
 | `VALIDATION.md` | Tested behavior and remaining limitations. |
 
 ## Prerequisites
@@ -267,15 +266,7 @@ Deleting an application does not authorize deleting the shared PostgreSQL instan
 Trial/free-plan availability, expiration, quotas and charges must be checked in your
 own account. A stopped application does not establish zero infrastructure cost.
 
-## Learning materials and references
-
-The [video pack](docs/video/btp-cf-006/README.md) now centers on five editable slides:
-one PostgreSQL instance with two isolated applications; cloud provisioning of SQL
-users and storage in SAP Credential Store; scoped secret retrieval into CAP process
-memory; a source-file map for each app; and a flowchart of provisioning followed
-by runtime credential retrieval.
-It includes a focused walkthrough in Portuguese; the previous eight-slide deck and longer recording
-outline remain available as supplementary materials.
+## References
 
 - [CAP with PostgreSQL](https://cap.cloud.sap/docs/guides/databases/postgres)
 - [CAP authentication](https://cap.cloud.sap/docs/node.js/authentication)

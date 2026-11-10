@@ -35,8 +35,6 @@ Validated in the existing laboratory:
 - Local checks: four credential client tests (JWE round-trip/tampering, scoped
   resolution, fail-closed configuration and safe errors), eight configuration tests
   and eleven browser tests passed. Both CAP artifacts build successfully.
-- The five revised editable slides were regenerated, with notes, shape/text bounds
-  and PowerPoint package integrity checked; preview images were visually reviewed.
 
 Remaining limits: a fresh new account/empty SQL deployment is not re-executed by
 this migration. The lab does not implement a production CI/CD identity/governance
