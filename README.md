@@ -269,10 +269,11 @@ own account. A stopped application does not establish zero infrastructure cost.
 
 ## Learning materials and references
 
-The [video pack](docs/video/btp-cf-006/README.md) now centers on four editable slides:
+The [video pack](docs/video/btp-cf-006/README.md) now centers on five editable slides:
 one PostgreSQL instance with two isolated applications; cloud provisioning of SQL
 users and storage in SAP Credential Store; scoped secret retrieval into CAP process
-memory; and a source-file map for each app.
+memory; a source-file map for each app; and a flowchart of provisioning followed
+by runtime credential retrieval.
 It includes a focused walkthrough in Portuguese; the previous eight-slide deck and longer recording
 outline remain available as supplementary materials.
 
