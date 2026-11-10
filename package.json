@@ -15,7 +15,8 @@
     "build:requests": "cd apps/requests && cds build --production",
     "build:assets": "cd apps/assets && cds build --production",
     "test:ui": "playwright test",
-    "test:cloud-config": "python3 -m unittest discover -s test/cloud -p 'test_*.py'"
+    "test:cloud-config": "python3 -m unittest discover -s test/cloud -p 'test_*.py'",
+    "test:credentials": "node test/credential-store/credential-store.test.cjs"
   },
   "dependencies": {
     "@cap-js/postgres": "3.1.2",

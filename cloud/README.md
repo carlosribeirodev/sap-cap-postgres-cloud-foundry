@@ -66,8 +66,8 @@ UI:  https://cap-lab-requests-ui-<route_suffix>.<domain>
 
 CF application/service names and SQL names use the `cap-lab-` / `cap_lab_` prefix.
 Use a dedicated space and an instance without conflicting lab databases/roles.
-A route suffix alone does not namespace these other resources. The bootstrap
-refuses existing names on its initial run rather than silently taking ownership.
+A route suffix alone does not namespace these other resources. The provisioner rejects existing SQL users without corresponding stored credentials
+rather than silently taking ownership.
 
 ## 3. Optional database diagnosis
 
@@ -102,57 +102,93 @@ the backend. `prepare-cloud.mjs` pins deployer dependencies/Node.js and includes
 smoke helpers. Rebuilding overwrites generated output: repeat preparation/lockfile
 steps after each build. Build does not create cloud tables.
 
-## 5. Prepare isolated databases and technical credentials
+## 5. Provision isolated databases and stored credentials
 
 ```sh
-python3 scripts/cloud-bootstrap.py
+python3 scripts/cloud-secrets.py setup
+python3 scripts/cloud-secrets.py provision
 ```
 
-This is a real infrastructure operation. It creates:
+`setup` creates `cap-lab-credentials` using the available `credstore` trial plan
+and mTLS authentication. This is an explicit free trial resource, subject to your
+account's quota/expiration. Check `cf marketplace -e credstore` first.
 
-- `cap_lab_requests_db` and `cap_lab_assets_db` in the existing server;
-- schemas `cap_lab_requests` and `cap_lab_assets`;
-- independent deployer/runtime logins for each domain, with random passwords;
-- four user-provided services: `cap-lab-{requests,assets}-{deploy,runtime}-db`.
+`provision` publishes a temporary task with the managed PostgreSQL binding and
+Credential Store access to four namespaces. The task generates passwords inside
+CF, stores them before SQL changes, then creates the two databases/schemas and
+runtime/deployer SQL users. An advisory lock prevents concurrent provisioners;
+existing owners and role privileges are checked. A pending stored password can
+be reapplied after interruption. Unexpected pre-existing users without stored
+credentials are rejected: they are not adopted or assigned a new password.
 
-The managed administrator binding is used only by a temporary, route-free task.
-The bootstrap prepares access and default grants; it does **not** create business
-tables. Runtime logins have CONNECT and TEMPORARY on their database and DML grants
-on the application's tables through default privileges. They have no persistent
-schema CREATE, CREATEDB, CREATEROLE or SUPERUSER. TEMPORARY is needed by CAP's
-PostgreSQL insert buffers. The deployer owns its database/schema.
+Namespaces are `cap-lab-{requests,assets}-{runtime,deployer}`; each contains a
+binary/key credential named `postgres` with format `json`, whose base64 value
+contains the connection JSON (including its TLS CA chain). A password entry is
+limited to 4,096 characters and cannot hold this connection bundle; a key entry
+supports up to 32 KB. The
+trial plan permits three bindings, ten namespaces and ten credentials. Two bindings
+belong to the APIs; only one temporary provisioning/deployer/test task may use the
+remaining binding at a time. Rate limiting is handled with bounded retries.
 
-The managed service can connect with `SESSION_USER` different from `CURRENT_USER`.
-The bootstrap grants membership to the effective role with SET/INHERIT enabled,
-then uses the application's deployer credentials to configure its schema.
+The task applies restricted SQL grants and default privileges, including TEMPORARY
+for CAP insert buffers. The deployer owns its database/schema; runtime has no
+persistent CREATE, CREATEDB, CREATEROLE or SUPERUSER. Business tables are created
+later by the CAP deployer. Provisioning still exists, but the old local bootstrap,
+temporary password UPS and service-key extraction are no longer used.
 
-A temporary service key, password-payload service and bootstrap application are
-removed in `finally` cleanup. The existing managed PostgreSQL service is preserved.
-Password/checkpoint state is written atomically with mode 0600. It is bound to the
-configured target. Keep it private and retain it for recovery; deleting it is not a
-safe way to rerun provisioning or rotate passwords.
+SQL passwords are not written to local checkpoints. The local delivery state holds
+only target/phase metadata; the authoritative credentials remain in Credential
+Store. Protect access to its bindings and to the provisioning identity.
 
-### Recovering an interrupted bootstrap
+### Credential Store migration and rotation
 
-Read the reported stage without sharing the state contents. If it is
-`bootstrap-needs-review`, inspect the created resources first:
+For an existing deployment from the previous UPS-based version, build and prepare
+**both** apps first. Preserve the old services until the migration is validated:
 
 ```sh
-python3 scripts/cloud-bootstrap.py --inspect
+python3 scripts/cloud-secrets.py setup
+python3 scripts/cloud-secrets.py migrate
+python3 scripts/cloud-deliver.py --redeploy-api
+python3 scripts/cloud-assets.py --redeploy
+python3 scripts/cloud-secrets.py check
+python3 scripts/cloud-secrets.py isolation
 ```
 
-After reviewing the output and ownership, resume with the preserved passwords:
+Migration reads the four old UPS connections only inside CF, verifies them and
+stores them without changing the passwords. Each API is then switched to its
+read-only runtime namespace, and its old SQL UPS binding/env selectors are removed.
+The check task verifies SQL connections and denies deployer-secret reads; isolation
+checks CRUD, blocked persistent DDL and cross-database denial in both directions.
+
+After both APIs work, rotate the old passwords **inside CF**, then restart the APIs
+so their pools use the new credentials. Plan for a maintenance window: this lab
+uses one login per role and does not implement overlapping password rotation.
 
 ```sh
-python3 scripts/cloud-bootstrap.py --resume
+python3 scripts/cloud-secrets.py rotate
+cf restart cap-lab-requests
+cf restart cap-lab-assets
+python3 scripts/cloud-secrets.py check
+python3 scripts/cloud-secrets.py isolation
+python3 scripts/cloud-secrets.py cleanup
 ```
 
-Do not use `--resume` to adopt unrelated resources. A different failure stage,
-partially created user-provided services, missing state, or an unexpected owner
-requires manual review. The helpers are not a general infrastructure reconciliation
-engine and do not automatically undo or delete databases after partial progress.
-If CF cannot be reached during cleanup, inspect the named temporary app/service/key
-and remove only those resources once access is restored.
+Cleanup refuses APIs still bound to old runtime services, deletes the four named
+legacy UPS services, and replaces the old local secret checkpoint with selected
+non-secret metadata. Old password copies become invalid after rotation; this does
+not claim secure erasure of filesystem backups or other previously made copies.
+Do not delete the PostgreSQL instance, databases, Credential Store or its credentials.
+
+Credential Store stores credentials; it does not automatically create SQL users or
+synchronize SQL password rotation. Its binding credentials also expire and need
+renewal/rebinding separately. The apps hold SQL credentials only in process memory;
+`VCAP_SERVICES` contains the mTLS Credential Store access, not the database password.
+`lib/cloud-start.cjs` fetches and validates the connection before CAP starts, keeps
+TLS validation enabled, and fails closed if the secret is unavailable or pending.
+
+Developers with production Space Developer, binding access, SSH/task execution or
+unreviewed release powers may still extract/use secrets. A production deployment
+needs controlled automation identities, access restrictions, review and auditing.
 
 ## 6. Deploy the model, API and validation tasks
 
@@ -161,10 +197,9 @@ python3 scripts/cloud-deliver.py
 ```
 
 The helper creates `cap-lab-requests-auth` using XSUAA `application`, stages a
-route-free deployer task and runs `cds-deploy`. CAP creates business tables/views.
-The deployer application is removed after execution, while its connection service
-remains for future deliveries. It then publishes `cap-lab-requests` with 256 MB,
-a five-connection pool, the runtime binding and XSUAA.
+route-free deployer task and runs the CAP deploy API. CAP creates business tables/views.
+The deployer application is removed after execution, while its credential remains in Credential Store for future deliveries. It then publishes `cap-lab-requests` with 256 MB,
+a five-connection pool, read-only runtime namespace access and XSUAA.
 
 It checks SQL CRUD/isolation, mocked CAP roles with the real database, HTTP health,
 anonymous 401 and real XSUAA client-credentials token rejection with 403 when no
@@ -227,8 +262,8 @@ user table is involved. XSUAA login and SQL technical accounts solve different n
 
 ## 9. Complete the second application: Assets
 
-The first bootstrap already prepared `cap_lab_assets_db`, its private schema and
-deployer/runtime connection services. Do not run it again to deploy this API.
+The initial provisioning already prepared `cap_lab_assets_db`, its private schema
+and deployer/runtime credentials in Credential Store. Do not run it again to deploy this API.
 
 ```sh
 npm run build:assets
@@ -241,8 +276,8 @@ python3 scripts/cloud-assets.py
 
 The helper updates the shared XSUAA descriptor with Assets scopes, role collections
 and callback URLs while retaining Requests definitions. It stages the Assets
-model deployer using only `cap-lab-assets-deploy-db`, creates tables through CAP,
-and publishes `cap-lab-assets` with only its runtime connection service and XSUAA.
+model deployer using only its deployer namespace, creates tables through CAP,
+and publishes `cap-lab-assets` with only its runtime namespace and XSUAA.
 The API never receives the Requests SQL binding.
 
 It then checks Assets CAP authorization with mock identities and the real database.
@@ -307,19 +342,21 @@ cf delete cap-lab-assets-ui -r -f
 cf delete cap-lab-assets -r -f
 ```
 
-This preserves XSUAA, the four technical connection services, PostgreSQL and data.
+This preserves XSUAA, Credential Store, PostgreSQL and data.
 Review dependencies before removing any of those persistent resources. In
 particular, never delete the shared instance as part of an individual application's
-cleanup. UPS connections can use it even when no app is directly bound to it.
+cleanup. Stored connections can use it even when no app is directly bound to it.
 The two APIs and two AppRouters require 1 GB combined, plus staging/tasks. Check plan costs,
 quotas and expiration in your own account; no universal zero-cost claim is made.
 
-Passwords in user-provided services are not broker-rotated automatically. Update
-PostgreSQL and the matching connection service together, then refresh app bindings
-as required. Keep the private state protected and consistent with that change.
+Credential Store does not broker-rotate custom SQL logins automatically. Use the
+explicit rotation task and restart APIs afterwards. Renew expiring Credential Store
+bindings separately; never use a broad managed database binding as a runtime fallback.
 
 ## References
 
+- [SAP Credential Store](https://help.sap.com/docs/credential-store/sap-credential-store)
+- [Credential Store least privilege](https://help.sap.com/docs/credential-store/sap-credential-store/principle-of-least-privilege)
 - [CAP PostgreSQL](https://cap.cloud.sap/docs/guides/databases/postgres)
 - [CAP authorization](https://cap.cloud.sap/docs/guides/security/authorization)
 - [AppRouter configuration](https://help.sap.com/docs/btp/sap-business-technology-platform/application-router-configuration)

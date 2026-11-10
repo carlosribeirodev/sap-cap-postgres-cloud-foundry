@@ -1,7 +1,7 @@
 """Shared, account-independent configuration for Cloud Foundry helpers.
 
-Reading/rendering configuration never deploys resources. Runtime passwords belong
-to the ignored .local directory, not configuration examples or tracked manifests.
+Reading/rendering configuration never deploys resources. SQL passwords belong in SAP Credential Store; delivery checkpoints contain only
+metadata after migration. Account settings and rendered manifests remain ignored.
 """
 import json
 import os

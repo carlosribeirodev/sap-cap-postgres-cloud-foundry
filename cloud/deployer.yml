@@ -7,9 +7,14 @@ applications:
     buildpacks:
       - nodejs_buildpack
     services:
-      - cap-lab-requests-deploy-db
+      - name: cap-lab-credentials
+        parameters:
+          authorization:
+            default_permissions: []
+            namespace_permissions:
+              cap-lab-requests-deployer: [read]
     env:
       NODE_ENV: production
       cds_requires_db_kind: postgres
-      cds_requires_db_vcap_name: cap-lab-requests-deploy-db
-      cds_requires_db_vcap_label: user-provided
+      CAP_LAB_DOMAIN: requests
+      CAP_LAB_DB_ROLE: deployer

@@ -5,6 +5,14 @@ const { randomUUID } = require('node:crypto')
 const cds = require('@sap/cds')
 
 async function main() {
+  await require('../../lib/cloud-start.cjs').configure()
+  if (process.env.CAP_LAB_DOMAIN) {
+    const store = require('../../lib/credential-store.cjs').createStore()
+    const other = process.env.CAP_LAB_DOMAIN === 'requests' ? 'assets' : 'requests'
+    for (const ns of [`cap-lab-${other}-runtime`, `cap-lab-${process.env.CAP_LAB_DOMAIN}-deployer`]) {
+      await assert.rejects(store.read(ns), error => error.status === 403)
+    }
+  }
   assert.equal(process.env.NODE_ENV, 'development')
   await cds.plugins
   assert.equal(cds.env.requires.auth.kind, 'mocked')
@@ -32,7 +40,7 @@ async function main() {
     assert.equal((await request('DELETE', 'viewer', `(${id})`)).status, 403)
     assert.equal((await request('DELETE', 'editor', `(${id})`)).status, 204)
     id = undefined
-    console.log('CAP_AUTH_SMOKE ' + JSON.stringify({ anonymousDenied: true, viewerReadOnly: true, editorCRUD: true, managedUser: true, identities: 'mocked', app: 'assets' }))
+    console.log('CAP_AUTH_SMOKE ' + JSON.stringify({ anonymousDenied: true, viewerReadOnly: true, editorCRUD: true, managedUser: true, identities: 'mocked', secretIsolation: Boolean(process.env.CAP_LAB_DOMAIN), app: 'assets' }))
   } finally {
     if (id) await request('DELETE', 'editor', `(${id})`).catch(() => {})
     await new Promise(resolve => server.close(resolve))

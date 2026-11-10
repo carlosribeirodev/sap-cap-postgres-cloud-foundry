@@ -23,6 +23,9 @@ flowchart LR
   AssetsAPI -->|Assets runtime login| Assets
   XSUAA --- AssetsRouter
   XSUAA --- AssetsAPI
+  Vault[SAP Credential Store] -->|Requests runtime secret| API
+  Vault -->|Assets runtime secret| AssetsAPI
+  Vault -->|deployment secret| Deployer
   subgraph PostgreSQL[One PostgreSQL instance]
     Requests
     Assets[(Assets database / private schema)]
@@ -30,6 +33,8 @@ flowchart LR
 ```
 
 - **CAP** defines entities, exposes OData, and enforces business authorization.
+- **SAP Credential Store** holds SQL credentials in separate runtime/deployer namespaces.
+  The apps retrieve their own runtime credential using scoped mTLS bindings.
 - **The CAP deployer** creates and evolves tables/views from CDS models.
 - **PostgreSQL technical logins** control access between applications. They are
   different from the people signing in through XSUAA.
@@ -52,6 +57,7 @@ The server's CPU, memory, connections, storage and availability remain shared.
 | `cloud/*.yml`, `cloud/xs-security.json` | Account-independent templates. |
 | `cloud/lab.example.json` | Copy and configure for your own CF target. |
 | `scripts` | Local runners, template rendering and explicit cloud operations. |
+| `lib` | Credential Store client and CAP startup integration. |
 | `tools/inspect-db` | Temporary, route-free cloud database tasks. |
 | `test` | Frontend and cloud-configuration tests using synthetic data. |
 | `docs/video/btp-cf-006` | Editable PowerPoint, narration and demonstration scripts. |
@@ -62,7 +68,7 @@ The server's CPU, memory, connections, storage and availability remain shared.
 Use **Node.js 24 LTS**, npm, Python **3.10+**, and Docker with Compose for local
 PostgreSQL. The cloud path also needs CF CLI v8, a BTP CF org/space with Space
 Developer access, sufficient memory/routes, an existing PostgreSQL service and
-an available XSUAA `application` plan. You do not need a global CDS installation.
+available XSUAA `application` and Credential Store `trial` plans. You do not need a global CDS installation.
 
 The shared cloud instance must allow creating databases, roles and schemas. This
 was verified on a particular PostgreSQL trial environment; availability and
@@ -136,13 +142,14 @@ npm run build:requests
 node scripts/prepare-cloud.mjs
 npm --prefix apps/requests/gen/pg install --package-lock-only --ignore-scripts --no-audit --no-fund
 npm --prefix apps/requests/gen/srv install --package-lock-only --ignore-scripts --no-audit --no-fund
-python3 scripts/cloud-bootstrap.py
+python3 scripts/cloud-secrets.py setup
+python3 scripts/cloud-secrets.py provision
 python3 scripts/cloud-deliver.py
 npm --prefix apps/approuter ci
 python3 scripts/cloud-approuter.py
 ```
 
-Rendering only writes ignored local files. **The three cloud-operation scripts
+Rendering only writes ignored local files. **The cloud-operation scripts
 create/update real resources** in the configured space. They verify the CLI target
 before mutation. No cloud command runs as part of `npm ci`, build or tests.
 
@@ -157,14 +164,28 @@ npm --prefix apps/assets-approuter ci
 python3 scripts/cloud-assets.py
 ```
 
-This uses the existing Assets database and technical bindings; it does not create
+This uses the existing Assets database and its scoped Credential Store access; it does not create
 another managed instance or rerun database provisioning. It publishes a separate
 API/AppRouter and tests CRUD, restricted DDL and cross-database denial in **both**
 directions. See the cloud guide for checkpoint recovery and route names.
 
-Real account settings are ignored in `cloud/lab.json`. Rendered manifests and secret
-checkpoint state live under ignored `.local/`. Never commit either. The example
+Real account settings are ignored in `cloud/lab.json`. Rendered manifests and non-secret delivery checkpoints live under ignored `.local/`.
+SQL passwords are generated inside CF and stored in SAP Credential Store; they are
+not saved to a workstation checkpoint. Never commit account-specific generated files. The example
 requires no access to the author's account, URLs or external workspace directories.
+
+### Production access boundaries
+
+This lab removes SQL passwords from workstation checkpoints and app environment
+variables. The Credential Store binding still contains sensitive access material.
+Space Developers who can obtain bindings, run tasks or publish arbitrary production
+code can still use that access. A vault alone does not enforce separation of duties:
+restrict production space access, use a controlled automation identity, review
+releases and audit operations. Do not claim that developers are technically unable
+to retrieve secrets while they retain those permissions.
+
+See [the cloud guide](cloud/README.md#credential-store-migration-and-rotation) for
+migration from the previous UPS-based lab and the explicit rotation procedure.
 
 ## Authentication and authorization
 
@@ -210,19 +231,19 @@ See [the validation record](VALIDATION.md) for the exact evidence and limitation
 ## Important operating details
 
 - Tables/views come from the **CAP deployer**; database/schema/login provisioning
-  belongs to the infrastructure bootstrap.
+  belongs to a temporary infrastructure provisioning task.
 - Cloud runtime has no CREATE on the persistent schema, CREATEDB, CREATEROLE or
   SUPERUSER. It does have `TEMPORARY` in its own database because the PostgreSQL
   adapter uses temporary parameter buffers for inserts.
 - Each application needs its own schema/model evolution history. Different entity
   names alone do not establish an access-control boundary.
-- The API binds to narrowly scoped user-provided services, not directly to the
-  administrator-capable managed PostgreSQL binding.
+- Each API binds to SAP Credential Store with read access to its runtime namespace.
+  Only the temporary provisioning task receives the administrator-capable managed PostgreSQL binding.
 - Isolation applies to application SQL credentials. Database and platform
   administrators remain privileged; this is not isolation from those operators.
-- Those services do not rotate custom SQL passwords automatically. PostgreSQL
-  credentials and the corresponding CF service must be updated together.
-- The managed instance may show no directly bound apps even while custom bindings
+- Credential Store does not rotate PostgreSQL passwords by itself. The explicit
+  rotation task updates the stored credential and SQL login; restart both APIs afterwards.
+- The managed instance may show no directly bound apps even while the APIs
   use its databases. Do not infer that the shared instance is unused.
 - TLS certificate validation is enabled. Do not disable it to mask connection errors.
 - The example uses CF manifests and tasks; it does not currently package an MTA.
@@ -249,9 +270,9 @@ own account. A stopped application does not establish zero infrastructure cost.
 ## Learning materials and references
 
 The [video pack](docs/video/btp-cf-006/README.md) now centers on four editable slides:
-one PostgreSQL instance with two isolated applications; bootstrap creation of SQL
-users, a private checkpoint and user-provided services; delivery of credentials
-through bindings and VCAP_SERVICES to CAP; and a source-file map for each app.
+one PostgreSQL instance with two isolated applications; cloud provisioning of SQL
+users and storage in SAP Credential Store; scoped secret retrieval into CAP process
+memory; and a source-file map for each app.
 It includes a focused walkthrough in Portuguese; the previous eight-slide deck and longer recording
 outline remain available as supplementary materials.
 

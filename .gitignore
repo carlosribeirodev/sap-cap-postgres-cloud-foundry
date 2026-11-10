@@ -25,3 +25,7 @@ secrets/
 *service-key*.json
 *service_key*.json
 .DS_Store
+
+# Shared helpers copied when preparing CF artifacts.
+tools/inspect-db/credential-store.cjs
+tools/inspect-db/cloud-start.cjs

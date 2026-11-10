@@ -5,9 +5,15 @@ applications:
     disk_quota: 512M
     no-route: true
     buildpacks: [nodejs_buildpack]
-    services: [cap-lab-assets-deploy-db]
+    services:
+      - name: cap-lab-credentials
+        parameters:
+          authorization:
+            default_permissions: []
+            namespace_permissions:
+              cap-lab-assets-deployer: [read]
     env:
       NODE_ENV: production
       cds_requires_db_kind: postgres
-      cds_requires_db_vcap_name: cap-lab-assets-deploy-db
-      cds_requires_db_vcap_label: user-provided
+      CAP_LAB_DOMAIN: assets
+      CAP_LAB_DB_ROLE: deployer

@@ -9,10 +9,15 @@ applications:
     health-check-type: http
     health-check-http-endpoint: /health
     services:
-      - cap-lab-assets-runtime-db
+      - name: cap-lab-credentials
+        parameters:
+          authorization:
+            default_permissions: []
+            namespace_permissions:
+              cap-lab-assets-runtime: [read]
       - cap-lab-requests-auth
     env:
       NODE_ENV: production
-      cds_requires_db_vcap_name: cap-lab-assets-runtime-db
-      cds_requires_db_vcap_label: user-provided
       cds_requires_db_pool_max: 5
+      CAP_LAB_DOMAIN: assets
+      CAP_LAB_DB_ROLE: runtime

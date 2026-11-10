@@ -83,5 +83,19 @@ class ContextTests(unittest.TestCase):
             context.Context(self.path)
 
 
+    def test_api_and_deployer_namespace_policies_are_separate(self):
+        # Assert the checked-in policy boundary rather than the rendering internals.
+        project = Path(__file__).resolve().parents[2]
+        for app in ['requests', 'assets']:
+            for role, filename in [('runtime', app + '.yml'), ('deployer', 'deployer.yml' if app == 'requests' else 'assets-deployer.yml')]:
+                text = (project / 'cloud' / filename).read_text()
+                self.assertIn('name: cap-lab-credentials', text)
+                self.assertIn(f'cap-lab-{app}-{role}: [read]', text)
+                self.assertNotIn('vcap_name', text)
+                self.assertNotIn('user-provided', text)
+                self.assertNotIn('postgres_service', text)
+                self.assertNotIn(': [create', text)
+
+
 if __name__ == '__main__':
     unittest.main()

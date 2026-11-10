@@ -1,10 +1,10 @@
 const assert = require('node:assert/strict')
 const { randomUUID } = require('node:crypto')
 const { Client } = require('pg')
-const bindings = Object.values(JSON.parse(process.env.VCAP_SERVICES || '{}')).flat()
-const c = bindings.find(b => b.name === 'cap-lab-requests-runtime-db')?.credentials
+const { connection } = require('./credential-store.cjs')
 
 async function main() {
+  const c = await connection('requests', 'runtime')
   assert(c, 'Runtime binding missing')
   const client = new Client({ ...c, connectionTimeoutMillis: 10000, query_timeout: 10000 })
   try {

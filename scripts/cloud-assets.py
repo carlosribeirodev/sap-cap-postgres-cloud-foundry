@@ -1,6 +1,6 @@
 """Publish the second CAP app and verify both PostgreSQL isolation directions.
 
-Uses existing isolated databases/UPS bindings. Never reruns database bootstrap.
+Uses existing isolated databases and Credential Store namespaces. Never reruns database bootstrap.
 No credentials, raw service-key output or environment dumps are printed.
 """
 import base64
@@ -75,7 +75,7 @@ def main():
             print('Deploying the Assets CDS model with its own technical deployer.', flush=True)
             try:
                 cf('push', 'cap-lab-assets-deployer', '--task', '-f', str(manifests['assets-deployer.yml']), timeout=420)
-                task = cf('run-task', 'cap-lab-assets-deployer', '--command', 'node grant-runtime.cjs && npm start', '--name', 'deploy-assets-model', '-m', '256M', '--wait', timeout=180, check=False)
+                task = cf('run-task', 'cap-lab-assets-deployer', '--command', 'npm start', '--name', 'deploy-assets-model', '-m', '256M', '--wait', timeout=180, check=False)
                 if task.returncode:
                     raise RuntimeError('Assets model deployment failed; API not published.')
                 checkpoint('model-deployed')
@@ -85,7 +85,12 @@ def main():
                 if cleaned.returncode:
                     print('Cleanup required: cap-lab-assets-deployer', flush=True)
         if phase == 'model-deployed':
-            print('Publishing Assets API with only its runtime SQL binding and XSUAA.', flush=True)
+            print('Publishing Assets API with its scoped Credential Store binding and XSUAA.', flush=True)
+            # Running processes retain their old environment until this push restarts them.
+            # New processes get only the scoped Credential Store binding.
+            cf('unbind-service', 'cap-lab-assets', 'cap-lab-assets-runtime-db', check=False)
+            for obsolete in ['cds_requires_db_vcap_name', 'cds_requires_db_vcap_label']:
+                cf('unset-env', 'cap-lab-assets', obsolete, check=False)
             cf('push', 'cap-lab-assets', '-f', str(manifests['assets.yml']), timeout=420)
             checkpoint('api-deployed')
         if phase == 'api-deployed':
@@ -96,7 +101,7 @@ def main():
                 raise RuntimeError('Assets CAP authorization test failed.')
             app = 'cap-pair-isolation-' + uuid.uuid4().hex[:8]
             manifest = Path(tmp) / 'isolation.yml'
-            manifest.write_text('applications:\n  - name: ' + app + '\n    memory: 128M\n    disk_quota: 512M\n    no-route: true\n    buildpacks: [nodejs_buildpack]\n    services: [cap-lab-requests-runtime-db, cap-lab-assets-runtime-db]\n')
+            manifest.write_text('applications:\n  - name: ' + app + '\n    memory: 128M\n    disk_quota: 512M\n    no-route: true\n    buildpacks: [nodejs_buildpack]\n    services:\n      - name: cap-lab-credentials\n        parameters:\n          authorization:\n            default_permissions: []\n            namespace_permissions:\n              cap-lab-requests-runtime: [read]\n              cap-lab-assets-runtime: [read]\n')
             try:
                 print('Checking own-database CRUD and cross-database denial in both directions.', flush=True)
                 cf('push', app, '--task', '-f', str(manifest), '-p', str(ROOT / 'tools' / 'inspect-db'), timeout=420)

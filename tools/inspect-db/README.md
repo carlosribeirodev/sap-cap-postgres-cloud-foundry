@@ -9,12 +9,13 @@ rendered `.local/generated/inspect-db.yml` and a temporary application name. See
 
 - `inspect.cjs` reads capability metadata in a read-only transaction. It prints no
   binding/URI/password or user identity values.
-- `bootstrap.cjs` is an infrastructure-changing helper invoked by
-  `scripts/cloud-bootstrap.py`. It uses a temporary password-payload binding and
-  never creates business tables. Do not execute it as an ad hoc read-only check.
-- `smoke.cjs` uses only the Requests runtime binding to check SQL CRUD, lack of
+- `secrets.cjs` provisions SQL resources or migrates/rotates credentials inside CF.
+  It uses the managed PostgreSQL binding only for those infrastructure operations,
+  stores passwords in Credential Store and prints only sanitized status markers.
+  Invoke through `scripts/cloud-secrets.py`; it replaces the old local bootstrap.
+- `smoke.cjs` uses only the Requests runtime namespace to check SQL CRUD, lack of
   persistent DDL privileges and denied cross-database access. Test writes roll back.
-- `isolation-pair.cjs` receives both runtime bindings in a temporary test task,
+- `isolation-pair.cjs` reads both runtime namespaces in a temporary test task,
   confirms a common host/port with distinct users/databases/schemas, and checks
   own-domain CRUD, blocked persistent DDL and cross-database denial in both directions.
   It never receives the managed administrator binding; SQL changes roll back.

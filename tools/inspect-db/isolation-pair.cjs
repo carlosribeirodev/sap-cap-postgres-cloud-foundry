@@ -1,22 +1,22 @@
 const assert = require('node:assert/strict')
 const { randomUUID } = require('node:crypto')
 const { Client } = require('pg')
-const bindings = Object.values(JSON.parse(process.env.VCAP_SERVICES || '{}')).flat()
+const { connection } = require('./credential-store.cjs')
 const specs = {
   requests: { table: 'lab_requests_requests', field: 'title', extra: 'status' },
   assets: { table: 'lab_assets_assets', field: 'name', extra: 'serialnumber' }
 }
 
 async function main() {
-  const first = bindings.find(binding => binding.name === 'cap-lab-requests-runtime-db')?.credentials
-  const second = bindings.find(binding => binding.name === 'cap-lab-assets-runtime-db')?.credentials
+  const first = await connection('requests', 'runtime')
+  const second = await connection('assets', 'runtime')
   assert(first && second, 'Both runtime bindings are required')
   assert.equal(first.host, second.host)
   assert.equal(Number(first.port), Number(second.port))
   for (const field of ['database', 'schema', 'user']) assert.notEqual(first[field], second[field])
   console.log('CAP_PAIR_ISOLATION ' + JSON.stringify({ sameInstanceEndpoint: true, separateDatabases: true, separateSchemas: true, separateUsers: true }))
   for (const [app, spec] of Object.entries(specs)) {
-    const c = bindings.find(binding => binding.name === `cap-lab-${app}-runtime-db`)?.credentials
+    const c = app === 'requests' ? first : second
     assert(c, 'Missing runtime binding')
     assert.equal(c.database, `cap_lab_${app}_db`)
     assert.equal(c.schema, `cap_lab_${app}`)

@@ -4,6 +4,46 @@ Reference environment tested on **2026-11-09**. This is an educational lab, not 
 production-readiness certification. Account IDs, live instance URLs, credentials
 and private operational inventory are intentionally excluded from this repository.
 
+## Credential Store revision
+
+The current revision replaces the local password bootstrap and SQL UPS services
+with SAP Credential Store (`credstore`, `trial`) and temporary CF infrastructure
+tasks. Earlier sections below record the previous implementation where noted.
+
+Validated in the existing laboratory:
+
+- Four runtime/deployer connection bundles migrated inside CF, with no service-key
+  extraction or new SQL password written to the workstation.
+- Requests and Assets start with scoped mTLS Credential Store bindings. Each API's
+  real binding can read its runtime secret, but receives HTTP 403 for the other
+  API's runtime namespace and its own deployer namespace.
+- Assets CAP model deployment uses only its deployer namespace. Both APIs pass
+  mocked-role CRUD tests with the real database, anonymous HTTP 401, health 200
+  and genuine XSUAA technical-token HTTP 403 without business scope.
+- Both runtime SQL connections resolve to the same instance endpoint, with distinct
+  users/databases/schemas; own CRUD succeeds, persistent DDL and cross-database
+  access are rejected in both directions.
+- Explicit CF rotation generated four new SQL passwords; new connections succeeded
+  and all four previous passwords were rejected (SQLSTATE 28P01). Both APIs restarted
+  successfully afterwards, with health 200 and anonymous API 401.
+- After rotation, the combined check/isolation task again verified both runtime
+  connections, denied deployer-secret reads and passed CRUD/DDL/cross-database checks
+  in both directions.
+- Legacy runtime/deployer UPS services were deleted after both APIs switched to
+  the vault; the local checkpoint was replaced with non-secret delivery metadata.
+  Temporary tasks/bindings and XSUAA test keys were removed.
+- Local checks: four credential client tests (JWE round-trip/tampering, scoped
+  resolution, fail-closed configuration and safe errors), eight configuration tests
+  and eleven browser tests passed. Both CAP artifacts build successfully.
+- The four revised editable slides were regenerated, with notes, shape/text bounds
+  and PowerPoint package integrity checked; preview images were visually reviewed.
+
+Remaining limits: a fresh new account/empty SQL deployment is not re-executed by
+this migration. The lab does not implement a production CI/CD identity/governance
+setup or overlapping password rotation. Operators with binding/SSH/task/release
+powers can still obtain or use secrets. Human SSO and role assignment remain a
+separate browser rehearsal; mock identities do not prove that flow.
+
 ## Reference environment
 
 - SAP BTP CF: PostgreSQL managed service (`postgresql-db`, `trial`) and XSUAA

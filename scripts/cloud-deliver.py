@@ -64,7 +64,7 @@ def main():
             print('Preparando deployer CAP sem rota pública.', flush=True)
             try:
                 cf('push', 'cap-lab-requests-deployer', '--task', '-f', str(manifests['deployer.yml']), timeout=420)
-                task = cf('run-task', 'cap-lab-requests-deployer', '--command', 'node grant-runtime.cjs && npm start', '--name', 'deploy-cds-model', '-m', '256M', '--wait', timeout=180, check=False)
+                task = cf('run-task', 'cap-lab-requests-deployer', '--command', 'npm start', '--name', 'deploy-cds-model', '-m', '256M', '--wait', timeout=180, check=False)
                 if task.returncode:
                     raise RuntimeError('Task de deploy do modelo falhou; sem iniciar API.')
                 state['stage'] = 'model-deployed'
@@ -73,7 +73,12 @@ def main():
             finally:
                 cf('delete', 'cap-lab-requests-deployer', '-f', check=False)
         if state['stage'] == 'model-deployed':
-            print('Publicando API com binding de runtime e XSUAA.', flush=True)
+            print('Publicando API com namespace runtime no Credential Store e XSUAA.', flush=True)
+            # Running processes retain their old environment until this push restarts them.
+            # New processes get only the scoped Credential Store binding.
+            cf('unbind-service', 'cap-lab-requests', 'cap-lab-requests-runtime-db', check=False)
+            for obsolete in ['cds_requires_db_vcap_name', 'cds_requires_db_vcap_label']:
+                cf('unset-env', 'cap-lab-requests', obsolete, check=False)
             cf('push', 'cap-lab-requests', '-f', str(manifests['requests.yml']), timeout=420)
             state['stage'] = 'api-deployed'
             save()
@@ -82,7 +87,7 @@ def main():
             tool = ROOT / 'tools' / 'inspect-db'
             # Manifest próprio: o teste não recebe o binding administrativo mypgsql.
             manifest = Path(tmp) / 'smoke.yml'
-            manifest.write_text('applications:\n  - name: ' + app + '\n    memory: 128M\n    disk_quota: 512M\n    no-route: true\n    buildpacks: [nodejs_buildpack]\n    services: [cap-lab-requests-runtime-db]\n')
+            manifest.write_text('applications:\n  - name: ' + app + '\n    memory: 128M\n    disk_quota: 512M\n    no-route: true\n    buildpacks: [nodejs_buildpack]\n    services:\n      - name: cap-lab-credentials\n        parameters:\n          authorization:\n            default_permissions: []\n            namespace_permissions:\n              cap-lab-requests-runtime: [read]\n')
             try:
                 print('Validando CRUD e restrições com a credencial de runtime.', flush=True)
                 cf('push', app, '--task', '-f', str(manifest), '-p', str(tool), timeout=420)
