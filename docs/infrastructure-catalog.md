@@ -11,7 +11,9 @@ app's CDS model afterwards. These are separate operations.
 The catalog provisioner has been validated with PostgreSQL and SAP Credential Store.
 Its GitHub Actions workflow validates declarations and runs 39 tests without BTP
 credentials. Collaborators with Write use clone, a branch in that repository,
-push and a pull request. Main requires the CI check and CODEOWNER approval.
+push and a pull request. Main requires CI for everyone and CODEOWNER approval
+for non-admins. Only repository admins may bypass review when merging a PR,
+including their own; this does not bypass CI or allow a direct push.
 See the [request guide](https://github.com/carlosribeirodev/sap-btp-infra/blob/main/CONTRIBUTING.md).
 
 The application code and cloud scripts in this repository still implement the
