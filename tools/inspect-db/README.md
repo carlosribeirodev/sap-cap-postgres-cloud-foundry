@@ -3,6 +3,11 @@
 These helpers are staged inside Cloud Foundry with no public route. They do not
 need direct workstation access to a network-restricted PostgreSQL service.
 
+These tasks belong to the standalone CAP recipe. The catalog project has its own
+provisioning and verification worker. Read the
+[integration boundary](../../docs/infrastructure-catalog.md) before running these
+helpers against an existing environment; their names and vault namespaces differ.
+
 Configure `cloud/lab.json` and run `python3 scripts/render-cloud.py` first. Use the
 rendered `.local/generated/inspect-db.yml` and a temporary application name. See
 [the cloud guide](../../cloud/README.md) for the complete command sequence.

@@ -9,6 +9,20 @@ schema, runtime/deployer logins and HTML/CSS/JavaScript interface. They share th
 PostgreSQL instance and XSUAA service, with separate business scopes. UI labels
 are in Brazilian Portuguese. The setup and operational documentation are in English.
 
+## Infrastructure catalog and current deployment status
+
+The public [sap-btp-infra](https://github.com/carlosribeirodev/sap-btp-infra) repository
+now owns PostgreSQL infrastructure requests, policies, provisioning and CI.
+Authorized developers use clone, branch, push and PR there. This repository holds
+the CAP applications and the earlier standalone reproduction recipe.
+
+The CAP runtime and manifests still need adaptation to the catalog's database,
+schema and vault namespaces. The previous reference deployment was removed for
+the rebuild; its validation records describe earlier successful runs. No current
+application deployment is implied by a passing infrastructure CI.
+Read the [integration status and compatibility table](docs/infrastructure-catalog.md)
+before using cloud commands. The local quick start remains available.
+
 ## Architecture
 
 ```mermaid
@@ -61,6 +75,7 @@ The server's CPU, memory, connections, storage and availability remain shared.
 | `tools/inspect-db` | Temporary, route-free cloud database tasks. |
 | `test` | Frontend and cloud-configuration tests using synthetic data. |
 | `VALIDATION.md` | Tested behavior and remaining limitations. |
+| `docs/infrastructure-catalog.md` | Catalog integration status and differences from the standalone recipe. |
 
 ## Prerequisites
 
@@ -126,7 +141,11 @@ The local user owns its schema and performs both deployment and CRUD. The cloud
 setup separates **deployer** and **runtime** credentials. This distinction matters:
 the local example alone does not prove the cloud runtime has limited DDL privileges.
 
-## Reproduce on SAP BTP Cloud Foundry
+## Reproduce the standalone recipe on SAP BTP Cloud Foundry
+
+This section uses the original naming and provisioning flow. For the catalog
+exercise, follow [its integration status](docs/infrastructure-catalog.md) first;
+the standalone scripts do not consume catalog allocations yet.
 
 Follow the [complete cloud guide](cloud/README.md), including target configuration,
 PostgreSQL permissions, service bindings, CAP deployment, XSUAA and AppRouter.

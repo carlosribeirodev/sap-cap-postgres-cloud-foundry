@@ -4,6 +4,19 @@ This guide deploys two CAP APIs and their AppRouters to your own BTP CF space,
 using two isolated logical databases on one existing PostgreSQL instance. It does
 not create a PostgreSQL managed service implicitly.
 
+## Scope: standalone reproduction
+
+This guide documents the earlier application-owned provisioning and delivery flow.
+New PostgreSQL requests use the public
+[infrastructure catalog](https://github.com/carlosribeirodev/sap-btp-infra).
+The CAP runtime, manifests and helpers here still expect different SQL names and
+vault namespaces. Read the [integration status](../docs/infrastructure-catalog.md)
+before selecting an environment. Use a separate target for this standalone recipe;
+do not apply its provision, rotation or cleanup commands to catalog-managed resources.
+
+The previous reference deployment was removed for the catalog rebuild. The steps
+below remain a reproduction guide, not a statement that the author's APIs are live.
+
 ## 1. Check account capabilities and sign in
 
 You need CF CLI v8, Node.js 24, npm, Python 3.10+, a CF org/space and Space Developer

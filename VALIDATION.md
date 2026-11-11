@@ -4,6 +4,18 @@ Reference environment tested on **2026-11-09**. This is an educational lab, not 
 production-readiness certification. Account IDs, live instance URLs, credentials
 and private operational inventory are intentionally excluded from this repository.
 
+## Catalog rebuild status — 2026-11-11
+
+The previous reference environment's application resources were removed for the
+infrastructure-catalog rebuild. The results below remain historical validation
+of the standalone recipe; they are not live endpoint or catalog-integration checks.
+
+The [infrastructure project](https://github.com/carlosribeirodev/sap-btp-infra)
+separately validates its catalog and provisioner with 39 tests. Its CI does not
+deploy these CAP apps. Runtime/manifests adaptation, XSUAA, application delivery
+and fresh browser validation remain pending. See the
+[integration boundary](docs/infrastructure-catalog.md).
+
 ## Credential Store revision
 
 The current revision replaces the local password bootstrap and SQL UPS services
